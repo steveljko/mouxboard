@@ -26,12 +26,32 @@ def move_cursor(x: int, y: int):
     args = shlex.split(cmd)
     try:
         completed = subprocess.run(
-                args,
-                check=True,
-                capture_output=True,
-                text=True,
-                timeout=5
-                )
+            args,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        return True, completed.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        return False, e.stderr.strip() or e.stdout.strip()
+    except Exception as e:
+        return False, str(e)
+
+def click_using_cursor():
+    """
+    asd
+    """
+    cmd = f"wlrctl pointer click"
+    args = shlex.split(cmd)
+    try:
+        completed = subprocess.run(
+            args,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
         return True, completed.stdout.strip()
     except subprocess.CalledProcessError as e:
         return False, e.stderr.strip() or e.stdout.strip()
@@ -49,9 +69,18 @@ def move(x, y):
         app.logger.info(f"Moving cursor: x={x}, y={y}")
         return jsonify({"status": "ok", "x": x, "y": y, "output": out}), 200
     else:
-        app.logger.info(f"Moving cursor failed")
+        app.logger.info("Moving cursor failed")
         return jsonify({"status": "error", "message": out}), 500
 
+@app.route('/click', methods=['GET'])
+def click():
+    ok, out = click_using_cursor()
+    if ok:
+        app.logger.info("Click successful")
+        return jsonify({"status": "ok"}), 200
+    else:
+        app.logger.info("Click failed")
+        return jsonify({"status": "error", "message": out}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

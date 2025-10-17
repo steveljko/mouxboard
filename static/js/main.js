@@ -8,10 +8,12 @@ const state = {
   dx: 0,
   dy: 0,
   active: false,
+  hasMoved: false,
 };
 
 let lastSendTime = 0;
 const SEND_INTERVAL = 16; // ~60fps throttle
+const CLICK_THRESHOLD = 10; // pixels - max movement to count as click
 
 function resize() {
   canvas.width = window.innerWidth;
@@ -51,6 +53,11 @@ function sendMove(dx, dy) {
     .catch(err => console.error('Move error:', err));
 }
 
+function sendClick() {
+  fetch('/click')
+    .catch(err => console.error('Click error:', err));
+}
+
 function render() {
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -69,10 +76,12 @@ canvas.addEventListener('touchstart', (e) => {
 
   state.x = pos.x;
   state.y = pos.y;
-  state.active = true;
 
   state.dx = 0;
   state.dy = 0;
+
+  state.active = true;
+  state.hasMoved = false;
 
   updateDebug();
   render();
@@ -86,6 +95,10 @@ canvas.addEventListener('touchmove', (e) => {
   state.dx = pos.x - state.x;
   state.dy = pos.y - state.y;
 
+  if (Math.abs(state.dx) > CLICK_THRESHOLD || Math.abs(state.dy) > CLICK_THRESHOLD) {
+    state.hasMoved = true;
+  }
+
   state.x = pos.x;
   state.y = pos.y;
 
@@ -97,10 +110,15 @@ canvas.addEventListener('touchmove', (e) => {
 
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault();
+  if (!state.hasMoved) {
+    sendClick();
+  }
 
-  state.active = false;
   state.dx = 0;
   state.dy = 0;
+
+  state.active = false;
+  state.hasMoved = false;
 
   updateDebug();
   render();
@@ -109,9 +127,11 @@ canvas.addEventListener('touchend', (e) => {
 canvas.addEventListener('touchcancel', (e) => {
   e.preventDefault();
 
-  state.active = false;
   state.dx = 0;
   state.dy = 0;
+
+  state.active = false;
+  state.hasMoved = false;
 
   updateDebug();
   render();
