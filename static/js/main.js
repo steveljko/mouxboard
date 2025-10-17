@@ -9,6 +9,7 @@ const state = {
   dy: 0,
   active: false,
   hasMoved: false,
+  touchCount: 0,
 };
 
 let lastSendTime = 0;
@@ -53,8 +54,8 @@ function sendMove(dx, dy) {
     .catch(err => console.error('Move error:', err));
 }
 
-function sendClick() {
-  fetch('/click')
+function sendClick(type) {
+  fetch(`/click/${type}`)
     .catch(err => console.error('Click error:', err));
 }
 
@@ -72,6 +73,8 @@ function render() {
 
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
+  state.touchCount = e.touches.length;
+
   const pos = getTouchPos(e.touches[0]);
 
   state.x = pos.x;
@@ -95,23 +98,31 @@ canvas.addEventListener('touchmove', (e) => {
   state.dx = pos.x - state.x;
   state.dy = pos.y - state.y;
 
-  if (Math.abs(state.dx) > CLICK_THRESHOLD || Math.abs(state.dy) > CLICK_THRESHOLD) {
+  if (e.touches.length === 1) {
+    const pos = getTouchPos(e.touches[0]);
+    state.dx = pos.x - state.x;
+    state.dy = pos.y - state.y;
+    
+    if (Math.abs(state.dx) > CLICK_THRESHOLD || Math.abs(state.dy) > CLICK_THRESHOLD) {
+      state.hasMoved = true;
+    }
+    
+    state.x = pos.x;
+    state.y = pos.y;
+    sendMove(state.dx, state.dy);
+  } else {
     state.hasMoved = true;
   }
-
-  state.x = pos.x;
-  state.y = pos.y;
-
-  sendMove(state.dx, state.dy);
-  updateDebug();
 
   render();
 }, {passive: false});
 
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault();
+
   if (!state.hasMoved) {
-    sendClick();
+    if (state.touchCount === 1) sendClick('left');
+    if (state.touchCount === 2) sendClick('right');
   }
 
   state.dx = 0;
@@ -119,6 +130,7 @@ canvas.addEventListener('touchend', (e) => {
 
   state.active = false;
   state.hasMoved = false;
+  state.touchCount = 0;
 
   updateDebug();
   render();
@@ -132,6 +144,7 @@ canvas.addEventListener('touchcancel', (e) => {
 
   state.active = false;
   state.hasMoved = false;
+  state.touchCount = 0;
 
   updateDebug();
   render();

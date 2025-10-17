@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 
 def move_cursor(x: int, y: int):
     """
-    Move the pointer to screen coordinates using the wlrctl.
+    Move the pointer to screen coordinates using wlrctl.
 
     Args:
         x (int): Target X coordinate in pixels.
@@ -38,12 +38,25 @@ def move_cursor(x: int, y: int):
     except Exception as e:
         return False, str(e)
 
-def click_using_cursor():
+def click_using_cursor(type):
     """
-    asd
+    Performs mouse click using wlrctl. 
+
+    Args:
+        type (str): Click type - must be either 'left' or 'right'
+
+    Returns:
+        tuple: (success: bool, message: str)
+
+    Raises:
+        ValueError: If type is not 'left' or 'right'
     """
-    cmd = f"wlrctl pointer click"
+    if type not in ('left', 'right'):
+        raise ValueError(f"Invalid click type '{type}'. Must be 'left' or 'right'.")
+
+    cmd = f"wlrctl pointer click {type}"
     args = shlex.split(cmd)
+
     try:
         completed = subprocess.run(
             args,
@@ -72,9 +85,9 @@ def move(x, y):
         app.logger.info("Moving cursor failed")
         return jsonify({"status": "error", "message": out}), 500
 
-@app.route('/click', methods=['GET'])
-def click():
-    ok, out = click_using_cursor()
+@app.route('/click/<type>', methods=['GET'])
+def click(type):
+    ok, out = click_using_cursor(type)
     if ok:
         app.logger.info("Click successful")
         return jsonify({"status": "ok"}), 200
