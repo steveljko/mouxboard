@@ -7,13 +7,16 @@ const state = {
   lastSendTime: 0,
   totalMovement: 0,
   initialTouchCount: 0,
-  clickSent: false
+  clickSent: false,
+  accScrollY: 0
 };
 
 const CONFIG = {
-  sendInterval: 16, // ~60fps
-  clickThreshold: 10, // max movement to register as click
-  sensitivity: 4.0
+  sendInterval: 16,         // ~60fps
+  clickThreshold: 10,       // max movement to register as click
+  moveSensitivity: 4.0,     // how fast pointer movement is applied
+  scrollThreshold: 6,       // min movement to start scrolling
+  scrollSensitivity: 2.0,   // how fast scrolling responds to input
 };
 
 function resize() {
@@ -25,7 +28,7 @@ function resize() {
 function updateDebug() {
   debugEl.innerHTML = `
     <div class="debug-line"><span class="label">Touches:</span> <span class="value">${state.touches.size}</span></div>
-    ${Array.from(state.touches.values()).map((t, i) => `<div class="debug-line"><span class="label">Position #${i + 1}:</span> <span class="value">(${t.x.toFixed(0)}, ${t.y.toFixed(0)})</span></div>`)}
+    ${Array.from(state.touches.values()).map((t, i) => `<div class="debug-line"><span class="label">Position #${i + 1}:</span> <span class="value">(${t.x.toFixed(0)}, ${t.y.toFixed(0)})</span></div>`).join("")}
     <div class="debug-line"><span class="label">Movement:</span> <span class="value">${state.totalMovement.toFixed(1)}px</span></div>
     <div class="debug-line"><span class="label">Initial Count:</span> <span class="value">${state.initialTouchCount}</span></div>
   `;
@@ -42,16 +45,30 @@ function getTouchPos(touch) {
 function sendMove(dx, dy) {
   const now = Date.now();
   if (now - state.lastSendTime < CONFIG.sendInterval) return;
-  
   state.lastSendTime = now;
-  
-  const x = Math.round(dx * CONFIG.sensitivity);
-  const y = Math.round(dy * CONFIG.sensitivity);
-  
-  if (x === 0 && y === 0) return;
-  
-  fetch(`/move/${x}/${y}`)
-    .catch(err => console.error('Move error:', err));
+
+  if (state.initialTouchCount === 1) {
+    const mx = Math.round(dx * CONFIG.moveSensitivity);
+    const my = Math.round(dy * CONFIG.moveSensitivity);
+
+    if (mx !== 0 && my !== 0) fetch(`/move/${mx}/${my}`).catch(err => console.error('Move error:', err));
+
+    return;
+  }
+
+  if (state.initialTouchCount === 2) {
+    // collects tiny scroll movements until they've accumulated at least one full pixel,
+    // then sends it to server, this keeps scrolling smooth instead of jumpy.
+    state.accScrollY += dy * CONFIG.scrollSensitivity;
+    const sy = Math.round(state.accScrollY);
+    
+    if (sy !== 0) {
+      state.accScrollY -= sy;
+      fetch(`/scroll/${sy}`).catch(err => console.error('Scroll error:', err));
+    }
+
+    return;
+  }
 }
 
 function sendClick(type) {
@@ -89,6 +106,7 @@ canvas.addEventListener('touchstart', (e) => {
   state.totalMovement = 0;
   state.initialTouchCount = e.touches.length;
   state.clickSent = false;
+  state.accScrollY = 0;
 
   updateDebug();
   render();

@@ -56,7 +56,23 @@ def click_using_cursor(type):
 
     cmd = f"wlrctl pointer click {type}"
     args = shlex.split(cmd)
+    try:
+        completed = subprocess.run(
+            args,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        return True, completed.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        return False, e.stderr.strip() or e.stdout.strip()
+    except Exception as e:
+        return False, str(e)
 
+def scroll_using_cursor(x):
+    cmd = f"wlrctl pointer scroll {x}"
+    args = shlex.split(cmd)
     try:
         completed = subprocess.run(
             args,
@@ -93,6 +109,14 @@ def click(type):
         return jsonify({"status": "ok"}), 200
     else:
         app.logger.info("Click failed")
+        return jsonify({"status": "error", "message": out}), 500
+
+@app.route('/scroll/<x>', methods=['GET'])
+def scroll(x):
+    ok, out = scroll_using_cursor(x)
+    if ok:
+        return jsonify({"status": "ok"}), 200
+    else:
         return jsonify({"status": "error", "message": out}), 500
 
 if __name__ == '__main__':
