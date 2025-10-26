@@ -8,7 +8,7 @@ const state = {
   totalMovement: 0,
   initialTouchCount: 0,
   clickSent: false,
-  accScrollY: 0
+  accScrollY: 0,
 };
 
 const CONFIG = {
@@ -183,3 +183,69 @@ canvas.addEventListener('touchcancel', (e) => {
 window.addEventListener('resize', resize);
 resize();
 updateDebug();
+
+document.getElementById('keyboard').addEventListener('click', () => {
+  const input = createHiddenInput();
+  document.body.appendChild(input);
+  input.value = 'x'; // sets 'x' for backspace handling on input change
+  input.autocomplete = 'off';
+  input.autocapitalize = 'off';
+  input.autocorrect = 'off';
+
+  input.addEventListener('input', handleInput);
+  input.addEventListener('keydown', handleKeydown);
+  input.addEventListener('blur', () => input.remove());
+
+  input.focus();
+  input.select();
+});
+
+function createHiddenInput() {
+  const input = document.createElement('input');
+
+  input.type = 'text';
+  Object.assign(input.style, {
+    position: 'absolute',
+    left: '-9999px',
+    opacity: '0',
+    pointerEvents: 'none'
+  });
+
+  return input;
+}
+
+function handleInput(e) {
+  const value = e.target.value;
+  
+  if (value === '') {
+    sendKey('backspace');
+    e.target.value = 'x'; // if backspace is pressed, restore placeholder
+    return;
+  }
+
+  if (value) {
+    const newChars = value.replace('x', ''); // gets only new characters (except placeholder)
+    for (const char of newChars) {
+      sendKey(char);
+    }
+  }
+  
+  e.target.value = 'x';
+}
+
+function handleKeydown(e) {
+  const keyCodes = {
+    13: 'enter',
+    32: 'space',
+  };
+  
+  if (keyCodes[e.keyCode]) {
+    e.preventDefault();
+    sendKey(keyCodes[e.keyCode]);
+  }
+}
+
+function sendKey(key) {
+  fetch(`/type/${key}`)
+    .catch(error => console.error('Error sending key:', error));
+}

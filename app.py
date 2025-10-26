@@ -87,6 +87,44 @@ def scroll_using_cursor(x):
     except Exception as e:
         return False, str(e)
 
+def type_on_keyboard(what):
+    """
+    Types character or press special keys using wtype.
+    
+    Args:
+        what (str): Character to type or special key name
+        
+    Special keys supported:
+        - 'backspace' -> BackSpace
+        - 'enter' -> Return
+        - 'space' -> space
+    """
+    special_keys = {
+        'backspace': 'BackSpace',
+        'enter': 'Return',
+        'space': 'space',
+    }
+    
+    if what.lower() in special_keys:
+        cmd = f"wtype -k {special_keys[what.lower()]}"
+    else:
+        cmd = f"wtype {shlex.quote(what)}"
+    
+    args = shlex.split(cmd)
+    try:
+        completed = subprocess.run(
+            args,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        return True, completed.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        return False, e.stderr.strip() or e.stdout.strip()
+    except Exception as e:
+        return False, str(e)
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -114,6 +152,14 @@ def click(type):
 @app.route('/scroll/<x>', methods=['GET'])
 def scroll(x):
     ok, out = scroll_using_cursor(x)
+    if ok:
+        return jsonify({"status": "ok"}), 200
+    else:
+        return jsonify({"status": "error", "message": out}), 500
+
+@app.route('/type/<what>', methods=['GET'])
+def type(what):
+    ok, out = type_on_keyboard(what)
     if ok:
         return jsonify({"status": "ok"}), 200
     else:
