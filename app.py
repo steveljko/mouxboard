@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import subprocess
 import shlex
 import logging
@@ -7,13 +7,13 @@ from threading import Lock
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
-def move_cursor(x: int, y: int):
+def send_pointer_move(x: int, y: int):
     """
     Move the pointer to screen coordinates using wlrctl.
 
     Args:
-        x (int): Target X coordinate in pixels.
-        y (int): Target Y coordinate in pixels.
+        x (int): X coordinate in pixels.
+        y (int): Y coordinate in pixels.
 
     Returns:
         tuple[bool, str]: (success, output)
@@ -38,7 +38,7 @@ def move_cursor(x: int, y: int):
     except Exception as e:
         return False, str(e)
 
-def click_using_cursor(type):
+def send_pointer_click(type):
     """
     Performs mouse click using wlrctl. 
 
@@ -70,8 +70,8 @@ def click_using_cursor(type):
     except Exception as e:
         return False, str(e)
 
-def scroll_using_cursor(x):
-    cmd = f"wlrctl pointer scroll {x}"
+def send_pointer_scroll(y):
+    cmd = f"wlrctl pointer scroll {y}"
     args = shlex.split(cmd)
     try:
         completed = subprocess.run(
@@ -87,12 +87,12 @@ def scroll_using_cursor(x):
     except Exception as e:
         return False, str(e)
 
-def type_on_keyboard(what):
+def send_key_press(key):
     """
     Types character or press special keys using wtype.
     
     Args:
-        what (str): Character to type or special key name
+        key (str): Character to type or special key name
         
     Special keys supported:
         - 'backspace' -> BackSpace
@@ -105,10 +105,10 @@ def type_on_keyboard(what):
         'space': 'space',
     }
     
-    if what.lower() in special_keys:
-        cmd = f"wtype -k {special_keys[what.lower()]}"
+    if key.lower() in special_keys:
+        cmd = f"wtype -k {special_keys[key.lower()]}"
     else:
-        cmd = f"wtype {shlex.quote(what)}"
+        cmd = f"wtype {shlex.quote(key)}"
     
     args = shlex.split(cmd)
     try:
@@ -129,9 +129,23 @@ def type_on_keyboard(what):
 def index():
     return render_template('index.html')
 
-@app.route('/move/<x>/<y>', methods=['GET'])
-def move(x, y):
-    ok, out = move_cursor(x, y)
+@app.route('/move', methods=['POST'])
+def move():
+    data = request.get_json() or {}
+
+    x = data.get('x')
+    y = data.get('y')
+    
+    if x is None or y is None:
+        return jsonify({"status": "error", "message": "Parameters 'x' and 'y' are required."}), 400
+    
+    try:
+        x, y = int(x), int(y)
+    except (ValueError, TypeError):
+        return jsonify({"status": "error", "message": "Parameters 'x' and 'y' must be integers."}), 400
+    
+    ok, out = send_pointer_move(x, y)
+
     if ok:
         app.logger.info(f"Moving cursor: x={x}, y={y}")
         return jsonify({"status": "ok", "x": x, "y": y, "output": out}), 200
@@ -139,9 +153,20 @@ def move(x, y):
         app.logger.info("Moving cursor failed")
         return jsonify({"status": "error", "message": out}), 500
 
-@app.route('/click/<type>', methods=['GET'])
-def click(type):
-    ok, out = click_using_cursor(type)
+@app.route('/click', methods=['POST'])
+def click():
+    data = request.get_json() or {}
+
+    type = data.get('type')
+
+    if type is None:
+        return jsonify({"status": "error", "message": "Parameter 'type' is required."}), 400
+
+    if type not in ['left', 'right']:
+        return jsonify({"status": "error", "message": "Parameter 'type' must be 'left' or 'right'."}), 400
+
+    ok, out = send_pointer_click(type)
+
     if ok:
         app.logger.info("Click successful")
         return jsonify({"status": "ok"}), 200
@@ -149,17 +174,46 @@ def click(type):
         app.logger.info("Click failed")
         return jsonify({"status": "error", "message": out}), 500
 
-@app.route('/scroll/<x>', methods=['GET'])
-def scroll(x):
-    ok, out = scroll_using_cursor(x)
+@app.route('/scroll', methods=['POST'])
+def scroll():
+    data = request.get_json() or {}
+
+    y = data.get('y')
+    
+    if y is None:
+        return jsonify({"status": "error", "message": "Parameter 'y' is required."}), 400
+    
+    try:
+        y = int(y)
+    except (ValueError, TypeError):
+        return jsonify({"status": "error", "message": "Parameter 'y' must be integer."}), 400
+
+    ok, out = send_pointer_scroll(y)
+
     if ok:
         return jsonify({"status": "ok"}), 200
     else:
         return jsonify({"status": "error", "message": out}), 500
 
-@app.route('/type/<what>', methods=['GET'])
-def type(what):
-    ok, out = type_on_keyboard(what)
+@app.route('/type', methods=['POST'])
+def type():
+    data = request.get_json() or {}
+
+    key = data.get('key')
+
+    if key is None:
+        return jsonify({"status": "error", "message": "Parameter 'key' is required."}), 400
+
+    if key.lower() in ['backspace', 'enter', 'space']:
+        pass
+    elif len(key) == 1:
+        if not key.isprintable() and key not in [' ', '\t', '\n']:
+            return jsonify({"status": "error", "message": "Parameter 'key' is invalid character."}), 400
+    else:
+        return jsonify({"status": "error", "message": "Parameter 'key' must be one character or special key."}), 400
+
+    ok, out = send_key_press(key)
+
     if ok:
         return jsonify({"status": "ok"}), 200
     else:

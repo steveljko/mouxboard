@@ -51,7 +51,13 @@ function sendMove(dx, dy) {
     const mx = Math.round(dx * CONFIG.moveSensitivity);
     const my = Math.round(dy * CONFIG.moveSensitivity);
 
-    if (mx !== 0 && my !== 0) fetch(`/move/${mx}/${my}`).catch(err => console.error('Move error:', err));
+    if (mx !== 0 && my !== 0) {
+      fetch('/move', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ x: mx, y: my }),
+      }).catch(err => console.error('Move error:', err));
+    }
 
     return;
   }
@@ -64,7 +70,11 @@ function sendMove(dx, dy) {
     
     if (sy !== 0) {
       state.accScrollY -= sy;
-      fetch(`/scroll/${sy}`).catch(err => console.error('Scroll error:', err));
+      fetch('/scroll', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ y: sy }),
+      }).catch(err => console.error('Scroll error:', err));
     }
 
     return;
@@ -72,8 +82,11 @@ function sendMove(dx, dy) {
 }
 
 function sendClick(type) {
-  fetch(`/click/${type}`)
-    .catch(err => console.error('Click error:', err));
+  fetch(`/click`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type }),
+  }).catch(err => console.error('Click error:', err));
 }
 
 function render() {
@@ -246,6 +259,9 @@ function handleKeydown(e) {
 }
 
 function sendKey(key) {
-  fetch(`/type/${key}`)
-    .catch(error => console.error('Error sending key:', error));
+  fetch('/type', {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key }),
+  }).catch(error => console.error('Error sending key:', error));
 }
