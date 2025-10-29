@@ -11,7 +11,68 @@
 <body>
   <canvas id="canvas"></canvas>
   <div id="debug"></div>
-  <button id="keyboard">Keyboard</button>
+
+  <div id="buttons">
+    <button id="keyboard">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="6" width="20" height="12" rx="2" stroke="white" stroke-width="1.5" />
+        <line x1="5" y1="10" x2="5" y2="10" stroke="white" stroke-width="2" stroke-linecap="round" />
+        <line x1="8" y1="10" x2="8" y2="10" stroke="white" stroke-width="2" stroke-linecap="round" />
+        <line x1="11" y1="10" x2="11" y2="10" stroke="white" stroke-width="2" stroke-linecap="round" />
+        <line x1="14" y1="10" x2="14" y2="10" stroke="white" stroke-width="2" stroke-linecap="round" />
+        <line x1="17" y1="10" x2="17" y2="10" stroke="white" stroke-width="2" stroke-linecap="round" />
+        <line x1="19" y1="10" x2="19" y2="10" stroke="white" stroke-width="2" stroke-linecap="round" />
+        <line x1="6.5" y1="14" x2="6.5" y2="14" stroke="white" stroke-width="2" stroke-linecap="round" />
+        <line x1="9.5" y1="14" x2="14.5" y2="14" stroke="white" stroke-width="2" stroke-linecap="round" />
+        <line x1="17.5" y1="14" x2="17.5" y2="14" stroke="white" stroke-width="2" stroke-linecap="round" />
+      </svg>
+    </button>
+    <button id="settings">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
+          stroke="white" stroke-width="1.5" />
+        <path
+          d="M19.6224 10.3954L18.5247 7.7448L20 6L18 4L16.2647 5.48295L13.5578 4.36974L12.9353 2H10.981L10.3491 4.40113L7.70441 5.51596L6 4L4 6L5.45337 7.78885L4.3725 10.4463L2 11V13L4.40111 13.6555L5.51575 16.2997L4 18L6 20L7.79116 18.5403L10.397 19.6123L11 22H13L13.6045 19.6132L16.2551 18.5155C16.6969 18.8313 18 20 18 20L20 18L18.5159 16.2494L19.6139 13.598L21.9999 12.9772L22 11L19.6224 10.3954Z"
+          stroke="white" stroke-width="1.5" />
+      </svg>
+    </button>
+  </div>
+
+  <div id="settingsPanel">
+    <div id="settingsContent">
+      <button id="close">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 6L6 18M6 6L18 18" stroke="white" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <h2 class="settings-title">Settings</h2>
+
+      <div class="settings-section">
+        <div class="setting-item">
+          <span class="setting-label">Move Sensitivity</span>
+          <div class="setting-control">
+            <input type="range" id="moveSensitivity" min="1" max="10" value="5">
+            <span id="moveSensitivityValue">5.0</span>
+          </div>
+        </div>
+        <div class="setting-item">
+          <span class="setting-label">Scroll Sensitivity</span>
+          <div class="setting-control">
+            <input type="range" id="scrollSensitivity" min="1" max="10" value="5">
+            <span id="scrollSensitivityValue">5.0</span>
+          </div>
+        </div>
+        <div class="setting-item">
+          <span class="setting-label">Show Debug</span>
+          <div class="setting-control">
+            <input type="checkbox" id="debugToggle" checked>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>

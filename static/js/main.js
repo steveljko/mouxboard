@@ -265,3 +265,29 @@ function sendKey(key) {
     body: JSON.stringify({ key }),
   }).catch(error => console.error('Error sending key:', error));
 }
+
+// Settings
+document.getElementById('settings').addEventListener('click', () => {
+  const panel = document.getElementById('settingsPanel');
+  panel.classList.toggle('active');
+});
+
+document.getElementById('close').addEventListener('click', () => {
+  const panel = document.getElementById('settingsPanel');
+  panel.classList.toggle('active');
+});
+
+document.getElementById('moveSensitivity').addEventListener('input', (e) => {
+  CONFIG.moveSensitivity = parseFloat(e.target.value);
+  document.getElementById('moveSensitivityValue').textContent = CONFIG.moveSensitivity.toFixed(1);
+});
+
+document.getElementById('scrollSensitivity').addEventListener('input', (e) => {
+  CONFIG.scrollSensitivity = parseFloat(e.target.value);
+  document.getElementById('scrollSensitivityValue').textContent = CONFIG.scrollSensitivity.toFixed(1);
+});
+
+document.getElementById('debugToggle').addEventListener('change', (e) => {
+  document.getElementById('debug').classList.toggle('active');
+  saveSettings();
+});
